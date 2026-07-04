@@ -16,22 +16,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.demodata.data.local.entity.GpsGoogleEntity
-
-import com.example.demodata.data.local.entity.GpsSensorsEntity
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.demodata.DemoDataApp
+import com.example.demodata.service.GpsCaptureService
 import com.example.demodata.ui.viewmodel.ComparativeGpsRecord
 import com.example.demodata.ui.viewmodel.GpsViewModel
-import com.example.demodata.service.GpsCaptureService
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun GpsScreen(viewModel: GpsViewModel) {
+fun GpsScreen() {
+
+    val app = LocalContext.current.applicationContext as DemoDataApp
+
+    val viewModel: GpsViewModel = viewModel(
+        factory = GpsViewModel.Factory(app.gpsRepository)
+    )
+
     val context = LocalContext.current
 
     // Lista de permisos requeridos por el laboratorio
@@ -42,6 +46,7 @@ fun GpsScreen(viewModel: GpsViewModel) {
             add(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+
     val estadoPermisos = rememberMultiplePermissionsState(permissions = permisos)
 
     // Estado local para saber si el servicio está corriendo

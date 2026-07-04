@@ -1,6 +1,7 @@
 package com.example.demodata.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.demodata.data.local.entity.GpsGoogleEntity
 
@@ -18,7 +19,6 @@ data class ComparativeGpsRecord(
     val google: GpsGoogleEntity?,
     val sensors: GpsSensorsEntity?
 )
-
 class GpsViewModel(private val gpsRepository: GpsRepository) : ViewModel() {
 
     val googlePoints = gpsRepository.googlePoints.stateIn(
@@ -48,4 +48,13 @@ class GpsViewModel(private val gpsRepository: GpsRepository) : ViewModel() {
     }
         .flowOn(Dispatchers.Default)   // Envía el cálculo pesado fuera del hilo de la UI
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    class Factory(
+        private val gpsRepository: GpsRepository
+    ) : ViewModelProvider.Factory {
+
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            GpsViewModel(gpsRepository) as T
+    }
 }

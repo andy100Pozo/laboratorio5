@@ -4,10 +4,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,13 +16,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.example.demodata.DemoDataApp
-import com.example.demodata.ui.screens.*
+import com.example.demodata.ui.screens.AudioScreen
+import com.example.demodata.ui.screens.GpsScreen
+import com.example.demodata.ui.screens.MediaScreen
+import com.example.demodata.ui.screens.ProfileScreen
 import com.example.demodata.ui.viewmodel.SessionViewModel
-import com.example.demodata.ui.viewmodel.GpsViewModel
-import com.example.demodata.ui.viewmodel.GpsViewModelFactory
-
+import com.example.demodata.ui.screens.*
 
 @Composable
 fun Navigation() {
@@ -33,12 +33,51 @@ fun Navigation() {
         factory = SessionViewModel.Factory(app.sessionManager)
     )
 
+    val rootNavController = rememberNavController()
     val isLoggedIn by sessionVm.isLoggedIn.collectAsStateWithLifecycle()
 
-    if (isLoggedIn) {
-        MainScaffold(sessionVm)
-    } else {
-        LoginScreen(onSubmit = sessionVm::login)
+    // Navega reactivamente cada vez que isLoggedIn cambia
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            rootNavController.navigate("main") {
+                popUpTo("auth") { inclusive = true }
+            }
+        } else {
+            rootNavController.navigate("auth") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    NavHost(
+        navController    = rootNavController,
+        startDestination = if (isLoggedIn) "main" else "auth"
+    ) {
+        // ── Grafo de Autenticación ──
+        navigation(startDestination = "login", route = "auth") {
+            composable("login") {
+                LoginScreen(
+                    onSubmit           = sessionVm::login,
+                    onRegisterNavigate = { rootNavController.navigate("register") }
+                )
+            }
+            composable("register") {
+                RegisterScreen(
+                    onBack   = { rootNavController.popBackStack() },
+                    onSubmit = { email, pass, onResult ->
+                        sessionVm.register(email, pass) { success ->
+                            onResult(success)
+                            if (success) rootNavController.popBackStack()
+                        }
+                    }
+                )
+            }
+        }
+
+        // ── Pantalla Principal ──
+        composable("main") {
+            MainScaffold(sessionVm)
+        }
     }
 }
 
@@ -63,12 +102,10 @@ private fun MainScaffold(sessionVm: SessionViewModel) {
         bottomBar = {
             NavigationBar {
                 val tabs = listOf(
-                    "gps"     to (Icons.Default.LocationOn   to "GNSS"),
-                    "media"   to (Icons.Default.CameraAlt    to "Multimedia"),
-                    "audio"   to (Icons.Default.Mic          to "Audio"),
-                    "sync"    to (Icons.Default.CloudSync    to "Sync"),
-                    "notif"   to (Icons.Default.Notifications to "Notif"),
-                    "profile" to (Icons.Default.Person       to "Perfil")
+                    "gps"     to (Icons.Default.LocationOn to "GNSS"),
+                    "media"   to (Icons.Default.CameraAlt  to "Media"),
+                    "audio"   to (Icons.Default.Mic        to "Audio"),
+                    "profile" to (Icons.Default.Person     to "Perfil")
                 )
                 tabs.forEachIndexed { idx, (route, iconLabel) ->
                     val (icon, label) = iconLabel
@@ -87,18 +124,9 @@ private fun MainScaffold(sessionVm: SessionViewModel) {
             startDestination = "gps",
             modifier         = Modifier.padding(padding)
         ) {
-            composable("gps") {
-                // SOLUCIÓN: Declaramos 'app' aquí adentro para que esté disponible en esta ruta
-                val app = LocalContext.current.applicationContext as DemoDataApp
-                val gpsVm: GpsViewModel = viewModel(
-                    factory = GpsViewModelFactory(app.gpsRepository)
-                )
-                GpsScreen(viewModel = gpsVm)
-            }
+            composable("gps")     { GpsScreen() }
             composable("media")   { MediaScreen() }
             composable("audio")   { AudioScreen() }
-            composable("sync")    { SyncScreen() }
-            composable("notif")   { NotificationsScreen() }
             composable("profile") { ProfileScreen(onLogout = sessionVm::logout, username = username) }
         }
     }
