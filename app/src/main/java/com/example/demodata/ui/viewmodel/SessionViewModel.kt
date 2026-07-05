@@ -81,8 +81,8 @@ class SessionViewModel(
             try {
                 val response = RetrofitClient.apiService.loginWithGoogle(
                     projectSlug = NetworkConstants.PROJECT_SLUG,
-                    request     = GoogleLoginRequest(
-                        token = googleToken,
+                    request = GoogleLoginRequest(
+                        token    = googleToken,
                         deviceId = sessionManager.getDeviceId()
                     )
                 )
