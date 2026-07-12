@@ -32,6 +32,13 @@ class SessionViewModel(
         initialValue = null
     )
 
+    val userId = sessionManager.userId.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = null
+    )
+
+
     val isDarkMode = sessionManager.isDarkMode.stateIn(
         scope        = viewModelScope,
         started      = SharingStarted.Eagerly,
@@ -51,10 +58,20 @@ class SessionViewModel(
                 )
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
-                    sessionManager.login(email, body.accessToken, body.refreshToken)
+
+                    var finalUserId: String? = null
+
+                    val meResponse = RetrofitClient.apiService.me(
+                        NetworkConstants.PROJECT_SLUG,
+                        "Bearer ${body.accessToken}"
+                    )
+
+                    if (meResponse.isSuccessful) {
+                        finalUserId = meResponse.body()?.user?.userId
+                    }
+
+                    sessionManager.login(email, body.accessToken, body.refreshToken, finalUserId)
                     onResult(true)
-                } else {
-                    onResult(false)
                 }
             } catch (e: Exception) {
                 onResult(false)
@@ -82,17 +99,39 @@ class SessionViewModel(
                 val response = RetrofitClient.apiService.loginWithGoogle(
                     projectSlug = NetworkConstants.PROJECT_SLUG,
                     request = GoogleLoginRequest(
-                        token    = googleToken,
+                        token = googleToken,
                         deviceId = sessionManager.getDeviceId()
                     )
                 )
+
                 if (response.isSuccessful && response.body() != null) {
+
                     val body = response.body()!!
-                    sessionManager.login("Google User", body.accessToken, body.refreshToken)
+
+                    var finalUserId: String? = null
+
+                    val meResponse = RetrofitClient.apiService.me(
+                        NetworkConstants.PROJECT_SLUG,
+                        "Bearer ${body.accessToken}"
+                    )
+
+                    if (meResponse.isSuccessful) {
+                        finalUserId = meResponse.body()?.user?.userId
+                    }
+
+                    sessionManager.login(
+                        username = "Google User",
+                        access = body.accessToken,
+                        refresh = body.refreshToken,
+                        userId = finalUserId
+                    )
+
                     onResult(true)
+
                 } else {
                     onResult(false)
                 }
+
             } catch (e: Exception) {
                 onResult(false)
             }

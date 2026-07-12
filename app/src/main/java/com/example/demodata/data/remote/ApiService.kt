@@ -2,10 +2,8 @@ package com.example.demodata.data.remote
 
 import com.example.demodata.data.remote.model.*
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.POST
-import retrofit2.http.Path
 
+import retrofit2.http.*
 interface ApiService {
 
     @POST("{projectSlug}/auth/register")
@@ -26,9 +24,34 @@ interface ApiService {
         @Body request: GoogleLoginRequest
     ): Response<TokenResponse>
 
+
+    // ... register, login, loginWithGoogle sin cambios ...
+
+    @GET("{projectSlug}/auth/me")
+    suspend fun me(
+        @Path("projectSlug") projectSlug: String,
+        @Header("Authorization") token: String
+    ): Response<UserMeResponse>
+
     @POST("{projectSlug}/auth/refresh-token")
     suspend fun refreshToken(
         @Path("projectSlug") projectSlug: String,
         @Body request: RefreshTokenRequest
     ): Response<TokenResponse>
+
+    @POST("{projectSlug}/geo-events-orm/")
+    suspend fun createGeoEventORM(
+        @Path("projectSlug") projectSlug: String,
+        @Header("Authorization") token: String?,
+        @Body request: GeoEventRequest
+    ): Response<GeoEventResponse>
+
+    @GET("{projectSlug}/geo-events-orm/")
+    suspend fun listGeoEventsORM(
+        @Path("projectSlug") projectSlug: String,
+        @Header("Authorization") token: String?,
+        @Query("user_id") userId: String?,
+        @Query("limit") limit: Int = 50,
+        @Query("offset") offset: Int = 0
+    ): Response<List<GeoEventResponse>>
 }

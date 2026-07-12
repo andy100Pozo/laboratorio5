@@ -22,6 +22,7 @@ class SessionManager(private val context: Context) {
     private companion object {
         val KEY_IS_LOGGED_IN   = booleanPreferencesKey("is_logged_in")
         val KEY_USERNAME       = stringPreferencesKey("username")
+        val KEY_USER_ID = stringPreferencesKey("user_id")
         val KEY_ACCESS_TOKEN   = stringPreferencesKey("access_token")    // ← nuevo Lab 6
         val KEY_REFRESH_TOKEN  = stringPreferencesKey("refresh_token")   // ← nuevo Lab 6
         val KEY_DARK_MODE      = booleanPreferencesKey("dark_mode")
@@ -32,6 +33,8 @@ class SessionManager(private val context: Context) {
 
     val currentUsername: Flow<String?> = context.sessionDataStore.data
         .map { prefs -> prefs[KEY_USERNAME] }
+
+    val userId: Flow<String?> = context.sessionDataStore.data.map { prefs -> prefs[KEY_USER_ID] }
 
     val accessToken: Flow<String?> = context.sessionDataStore.data    // ← nuevo Lab 6
         .map { prefs -> prefs[KEY_ACCESS_TOKEN] }
@@ -51,12 +54,13 @@ class SessionManager(private val context: Context) {
     }
 
     // Firma actualizada: ahora persiste los tokens junto al username
-    suspend fun login(username: String, access: String, refresh: String) {
+    suspend fun login(username: String, access: String, refresh: String, userId: String? = null) {
         context.sessionDataStore.edit { prefs ->
             prefs[KEY_IS_LOGGED_IN]  = true
             prefs[KEY_USERNAME]      = username
             prefs[KEY_ACCESS_TOKEN]  = access
             prefs[KEY_REFRESH_TOKEN] = refresh
+            if (userId != null) prefs[KEY_USER_ID] = userId
         }
     }
 
